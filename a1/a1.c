@@ -5,8 +5,9 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <fcntl.h>
 
-void cautareRec(const char *path)
+void cautareRec(const char *path)//////////////////////////// cautare recursiva
 {
     DIR *dir = NULL;
     struct dirent *entry = NULL;
@@ -32,7 +33,7 @@ void cautareRec(const char *path)
     closedir(dir);
 }
 
-int cautare(char *path)
+int cautare(char *path)////////////////////////// cautare simpla
 {
     DIR *dir = NULL;
     struct dirent *entry = NULL;
@@ -56,33 +57,28 @@ int cautare(char *path)
 
 }
 
-char* print_permission(const char *path) {
-    struct stat st;
-    static char mode_str[10];
-    if (stat(path, &st) == 0) {
-        const char *perms = "rwxrwxrwx";
-        mode_str[0] = '-';
-        mode_t mode = st.st_mode;
-        if (S_ISREG(mode)) mode_str[0] = '-';
-        if (S_ISDIR(mode)) mode_str[0] = 'd';
-        if (S_ISLNK(mode)) mode_str[0] = 'l';
-        if (mode & S_IRUSR) mode_str[1] = perms[0];
-        if (mode & S_IWUSR) mode_str[2] = perms[1];
-        if (mode & S_IXUSR) mode_str[3] = perms[2];
-        if (mode & S_IRGRP) mode_str[4] = perms[3];
-        if (mode & S_IWGRP) mode_str[5] = perms[4];
-        if (mode & S_IXGRP) mode_str[6] = perms[5];
-        if (mode & S_IROTH) mode_str[7] = perms[6];
-        if (mode & S_IWOTH) mode_str[8] = perms[7];
-        if (mode & S_IXOTH) mode_str[9] = perms[8];
-    }
-    return mode_str;
+void print_permission(struct stat fileStat,char * perm,char *path,char * string) {/////////////////// pentru permisiuni
+    char* permissions = (char*) malloc(sizeof(char) * 10);
+    memset(permissions, 0, 10);
+   
+    permissions[0] = (fileStat.st_mode & S_IRUSR) ? 'r' : '-';
+    permissions[1] = (fileStat.st_mode & S_IWUSR) ? 'w' : '-';
+    permissions[2] = (fileStat.st_mode & S_IXUSR) ? 'x' : '-';
+    permissions[3] = (fileStat.st_mode & S_IRGRP) ? 'r' : '-';
+    permissions[4] = (fileStat.st_mode & S_IWGRP) ? 'w' : '-';
+    permissions[5] = (fileStat.st_mode & S_IXGRP) ? 'x' : '-';
+    permissions[6] = (fileStat.st_mode & S_IROTH) ? 'r' : '-';
+    permissions[7] = (fileStat.st_mode & S_IWOTH) ? 'w' : '-';
+    permissions[8] = (fileStat.st_mode & S_IXOTH) ? 'x' : '-';
+    permissions[9] ='\0';
+	if(strcmp(perm,permissions)==0)
+	{
+	printf("%s/%s\n" ,path,string);
+	}
 }
 
 
-
-
-int cautare_perm(char *path, char *perm)
+int cautare_perm(char *path, char *perm)////////////////////////////////// cautare cu optiuni
 {
     DIR *dir = NULL;
     struct dirent *entry = NULL;
@@ -103,16 +99,106 @@ int cautare_perm(char *path, char *perm)
        { 
         printf("%s/%s\n", path,entry->d_name);
 	}
-	if(strcmp(perm,print_permission(path)) == 0)
-	{
-	printf("%s/%s\n", path,entry->d_name);
-	}
+	print_permission(statbuf,perm,path,entry->d_name);
     }
     }
     closedir(dir);
     return 0;
 }
 
+
+void Parse(char *path)
+{
+char magic[5] = "TO2Y";
+    magic[4] = '\0';
+    int fd;
+    short header_size=0;
+    int version=0;
+    short number_of_section=0;
+    fd = open(path, O_RDONLY);
+	char * str = calloc(strlen(magic)+1,sizeof(char));
+	read(fd,str,4);
+	read(fd,&header_size,2);
+	//printf("%d\n",header_size);
+	read(fd,&version,4);
+
+	read(fd,&number_of_section,1);
+	int * array=calloc(number_of_section,sizeof(int));
+	int aux=0;
+	
+	
+	//// bucla pentru a introduce memType in array
+	
+	for(int i=0;i<number_of_section;i++)
+	{
+	int aux;
+	lseek(fd,13,SEEK_CUR);
+	read(fd,&aux,4);
+	array[i]=aux;  ////// array pentru sect_type
+	lseek(fd,8,SEEK_CUR);
+	}
+
+	for(int i=0;i<number_of_section;i++)
+	{
+	if(array[i]!=37 && array[i]!=94 && array[i]!=87 && array[i]!=14)
+	{
+	printf("ERROR\nwrong sect_types");
+	aux++;
+	}
+	}
+	
+	if(aux == 0)
+	{
+	lseek(fd,11,SEEK_SET);/// se intoarce unde trebe sa citeasca
+	for(int i=0;i<number_of_section;i++)
+	{
+	char * SECTION_HEADERS = calloc(13,sizeof(char));
+	read(fd,SECTION_HEADERS,13);
+	int SECT_TYPE;
+	read(fd,&SECT_TYPE,4);
+	//printf("SECT_TYPE%d\n",SECT_TYPE);
+	int SECT_OFFSET;
+	read(fd,&SECT_OFFSET,4);
+	//printf("SECT_OFFSET%d\n",SECT_OFFSET);
+	int SECT_SIZE;
+	read(fd,&SECT_SIZE,4);
+	
+	if(strcmp(magic,str)!= 0)
+	{
+	printf("ERROR\nwrong magic");
+	break;
+	}
+	if(version<108 || version> 140)
+	{
+	printf("ERROR\nwrong version");
+	break;
+	}
+	if(number_of_section<5 || number_of_section>13)
+	{
+	printf("ERROR\nwrong sect_nr");
+	
+	break;
+	}
+	if(strcmp(magic,str)==0 && version>=108 && version <=140 && number_of_section>=5 && number_of_section <=13)
+	{
+	if(SECT_TYPE==37 || SECT_TYPE==94 || SECT_TYPE==87 || SECT_TYPE==14)
+	{
+	if(i==0){
+	printf("SUCCESS\n");
+	printf("version=%d\n",version);
+	printf("nr_sections=%d\n",number_of_section);
+	}
+	printf("section%d: %s ",i+1,SECTION_HEADERS);
+	printf("%d ",SECT_TYPE);
+	printf("%d\n",SECT_SIZE);
+	}
+	}
+	}
+	}
+	free(array);
+		close(fd);
+		
+}
 int main(int argc, char **argv){
 if(argc == 1)
 {
@@ -122,6 +208,15 @@ printf("ERROR\nno arguments");
         if(strcmp(argv[1], "variant") == 0){
             printf("93193\n");
         }
+        if(strcmp(argv[1],"parse") == 0) 
+        {
+	char* start = strchr(argv[2],'=')+1;// imi ia pathu
+	char* end = argv[2] + strlen(argv[2]);
+	char path[end-start];
+	strncpy(path,start,end-start);	
+	path[end-start]='\0';
+        Parse(path);
+	}
         if(strcmp(argv[1], "list") == 0 && strcmp(argv[2],"recursive") == 0){
         char* start = strchr(argv[3],'=')+1;
 	char* end = argv[3] + strlen(argv[3]);
