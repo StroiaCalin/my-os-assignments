@@ -374,8 +374,8 @@ void permission(struct stat fileStat,char * perm,char *path,char * string)  ////
 {
     char* sir = (char*) malloc(sizeof(char) * 10);
 
-    sir[0] = (fileStat.st_mode & S_IRUSR) ? 'r' : '-';///////// stackoverflow "How to print permissions in C"
-    sir[1] = (fileStat.st_mode & S_IWUSR) ? 'w' : '-';
+    sir[0] = (fileStat.st_mode & S_IRUSR) ? 'r' : '-';///////// stackoverflow "How to print permissions in C".
+    sir[1] = (fileStat.st_mode & S_IWUSR) ? 'w' : '-'; ///https://stackoverflow.com/questions/10323060/printing-file-permissions-like-ls-l-using-stat2-in-c
     sir[2] = (fileStat.st_mode & S_IXUSR) ? 'x' : '-';
     sir[3] = (fileStat.st_mode & S_IRGRP) ? 'r' : '-';
     sir[4] = (fileStat.st_mode & S_IWGRP) ? 'w' : '-';
