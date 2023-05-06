@@ -5,6 +5,14 @@
 #include "a2_helper.h"
 #include <pthread.h>
 
+void *functies(void* arg)
+{
+	int index = *(int *)arg;
+	info(BEGIN, 3, index+1);
+	info(END,3,index+1);
+	return NULL;
+}
+
 void *functie(void* arg)
 {
 	int index = *(int *)arg;
@@ -92,7 +100,7 @@ pthread_join(tids[i],NULL);
         wait(NULL);
 
      
-        info(END, 2, 0);
+       info(END, 2, 0);
        return 0;
     }
 
@@ -100,6 +108,19 @@ pthread_join(tids[i],NULL);
     if (fork() == 0) {
       
         info(BEGIN, 3, 0);
+        
+         pthread_t tidss[6];
+  int argss[6];
+  for(int i=0;i<6;i++)
+  {
+  argss[i]=i;
+    pthread_create(&tidss[i], NULL, functies, &argss[i]);
+}
+
+for(int i=0;i<6;i++)
+{
+pthread_join(tidss[i],NULL);
+}
 
   
         if (fork() == 0) {
