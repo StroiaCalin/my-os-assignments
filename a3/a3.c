@@ -27,6 +27,19 @@ int main() {
     }
     strcpy(aux, "HELLO#");
     write(pipe1,aux, strlen(aux));
+    char aux2[6];
+        read(pipe2,aux2,6);
+        if (strcmp(aux2, "ECHO#") == 0) {
+            char string[20]="ECHO 93193 VARIANT#";
+            write(pipe1, string, strlen(string));
+        }
+        char aux3[5];
+        read(pipe2,aux3,5);
+        if (strcmp(aux3, "EXIT#") == 0) {     
+                close(pipe1);
+    close(pipe2);
+    unlink(RESP_PIPE_NAME);
+    unlink(REQ_PIPE_NAME);
+    }
     return 0;
 }
-
